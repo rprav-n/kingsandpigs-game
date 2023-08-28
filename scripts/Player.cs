@@ -11,6 +11,7 @@ public class Player : KinematicBody2D
 	private int gravity = 500;
 	[Export]
 	private int jumpSpeed = 150;
+	private bool isAttacking = false;
 	
 	// All Normal variables
 	private Vector2 playerVelocity = Vector2.Zero;
@@ -18,6 +19,7 @@ public class Player : KinematicBody2D
 	
 	// All Node variables
 	private AnimatedSprite animatedSprite;
+	private CollisionShape2D collisionShape2D;
 	
 	// All Scene variables
 	
@@ -25,10 +27,12 @@ public class Player : KinematicBody2D
 	public override void _Ready()
 	{
 		animatedSprite = GetNode<AnimatedSprite>("AnimatedSprite");
+		collisionShape2D = GetNode<CollisionShape2D>("CollisionShape2D");
 	}
 
-	public override void _Process(float delta)
+	public override void _PhysicsProcess(float delta)
 	{
+		base._PhysicsProcess(delta);
 		playerMovement(delta);
 		updateAnimation();
 	}
@@ -62,25 +66,42 @@ public class Player : KinematicBody2D
 	
 	private void updateAnimation() 
 	{
-		
-		if (IsOnFloor()) 
+		if (Input.IsActionJustPressed("attack")) 
 		{
-			if (playerDirection != 0) 
+			isAttacking = true;
+			animatedSprite.Play("attack");
+		} else if (!isAttacking)
+		{
+			if (IsOnFloor()) 
 			{
-				animatedSprite.FlipH = playerDirection == -1;
-				animatedSprite.Play("run");
+				if (playerDirection != 0) 
+				{
+					animatedSprite.FlipH = playerDirection == -1;
+					animatedSprite.Play("run");
+				} else 
+				{
+					animatedSprite.Play("idle");
+				}	
 			} else 
 			{
-				animatedSprite.Play("idle");
-			}	
-		} else 
-		{
-			if (playerDirection != 0) 
-			{
-				animatedSprite.FlipH = playerDirection == -1;	
+				if (playerDirection != 0) 
+				{
+					animatedSprite.FlipH = playerDirection == -1;	
+				}
+				animatedSprite.Play("jump");
 			}
-			animatedSprite.Play("jump");
+		}	
+		var collisionPosition = new Vector2(-7, 2);
+		if (animatedSprite.FlipH) 
+		{
+			collisionPosition.x = 7;
 		}
-		
+		collisionShape2D.Position = collisionPosition;
+	}
+	
+	private void _on_AnimatedSprite_animation_finished() 
+	{
+		isAttacking = false;
+		//animatedSprite.Play("idle");
 	}
 }
